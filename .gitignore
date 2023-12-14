@@ -1,0 +1,18 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+game_addiction/__pycache__/
+# vs code configuration folder
+.vscode
+
+# Django logs and debug files:
+*.log
+*.pyc
+
+# Frontend settings
+node_modules
+
+# db
+db.sqlite3
+
