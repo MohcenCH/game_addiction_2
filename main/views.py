@@ -1,23 +1,50 @@
 from dj_rest_auth.views import LoginView
 from django.db import IntegrityError
-from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from rest_framework import status   
+from rest_framework import status
 from.serializers import *
 from .models import *
-from django.views.decorators.csrf import csrf_exempt
 from django.http import Http404
-
-
+from django.conf import settings
+from dj_rest_auth.app_settings import (
+    JWTSerializer, JWTSerializerWithExpiration, TokenSerializer,
+)
+from rest_framework import generics
+from django.contrib.auth import authenticate, login
 class CustomLogin(LoginView):
     def get_response(self):
         response = super().get_response()
         print("test")
         return response
+    
+    def get_response_serializer(self):
+        if getattr(settings, 'REST_USE_JWT', False):
+            if getattr(settings, 'JWT_AUTH_RETURN_EXPIRATION', False):
+                response_serializer = JWTSerializerWithExpiration
+            else:
+                response_serializer = JWTSerializer
+
+        else:
+            response_serializer = TokenSerializer
+        return response_serializer
+    
+class UserList(generics.ListCreateAPIView):
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
 
 
-
+    def perform_create(self, serializer):
+        user = serializer.save()
+        user = authenticate(
+            email=self.request.data.get("email"),
+            password=self.request.data.get("password"),
+        )
+        if user and user.is_active:
+            login(self.request, user)
+class DoctorList(generics.ListCreateAPIView):
+    serializer_class = DoctorSerializer
+    queryset = Doctor.objects.all()
 
 @api_view(['GET', 'POST'])
 def questions(request):
@@ -148,18 +175,9 @@ def questionnaires(request):
             serializer.save()
             return Response(serializer.data)
 
-@api_view(['GET','POST'])
-def patients(request):
-    if request.method == 'GET':
-        patients = Patient.objects.all()
-        serializer = PatientSerializer(patients, many = True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = PatientSerializer(data = request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-
+class PatientList(generics.ListCreateAPIView):
+    serializer_class = PatientSerializer
+    queryset = Patient.objects.all()
 
 @api_view(['GET', 'PUT'])
 def patientDetail(request, id):
