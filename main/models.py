@@ -47,7 +47,7 @@ class Patient(models.Model):
 class Doctor(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     specialty = models.CharField(max_length=255)
-    planned_therapy_sessions = models.IntegerField()
+    planned_therapy_sessions = models.IntegerField(null=True,blank=True)
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
