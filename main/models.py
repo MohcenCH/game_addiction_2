@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser
-
 from main.managers import UserManager
+from django.contrib.auth import get_user_model
+from django.db.models import Q
 
 
 class User(AbstractBaseUser):
@@ -54,12 +55,18 @@ class Doctor(models.Model):
 
 
 class Questionnaire(models.Model):
-    patient = models.OneToOneField(Patient, on_delete=models.CASCADE)
-    date_of_questionnaire = models.DateField()
+    name = models.CharField(max_length = 255)
+    def __str__(self):
+        return str(self.name)+" Questionnaire"
 
+class QuestionType(models.Model):
+    type = models.CharField(max_length = 255)
+    def __str__(self):
+        return self.type
 class Question(models.Model):
+    questionnaire = models.ForeignKey(Questionnaire, on_delete = models.CASCADE)
     text_of_question = models.TextField()
-    question_type = models.CharField(max_length=255)
+    question_type = models.ForeignKey(QuestionType, on_delete = models.DO_NOTHING)
     def __str__(self):
         return self.text_of_question
 
@@ -68,13 +75,21 @@ class AnswerOption(models.Model):
     answer_text = models.TextField()
     answer_point = models.FloatField()
     def __str__(self):
-        return self.answer_text
+        return str(self.question.text_of_question)+" ==> "+str(self.answer_text)
 
+class Survey(models.Model):
+    patient = models.ForeignKey(Patient, on_delete = models.DO_NOTHING)
+    questionnaire = models.ForeignKey(Questionnaire, on_delete = models.DO_NOTHING)
+    created_at = models.DateField(auto_now_add = True)
+    updated_at = models.DateField(auto_now = True)
+    def __str__(self):
+        return str(self.questionnaire.name)+"; "+str(self.patient)
 class QuestionResponse(models.Model):
     answer = models.ForeignKey(AnswerOption, on_delete=models.CASCADE)
-    questionnaire = models.ForeignKey(Questionnaire, on_delete=models.CASCADE)
+    survey = models.ForeignKey(Survey, on_delete = models.CASCADE)
     def __str__(self):
-        return str(self.questionnaire)+', '+str(self.answer.answer_text)
+        self.survey = Survey.objects.select_related('questionnaire').get(pk=self.survey.pk)
+        return str(self.survey)+', '+str(self.answer.answer_text)
 
     
 
@@ -89,15 +104,42 @@ class Alert(models.Model):
     type_of_alert = models.CharField(max_length=255)
 
 
-class Message(models.Model):
-    sender = models.ForeignKey(User, related_name="sender", on_delete=models.CASCADE)
-    recipient = models.ForeignKey(
-        User, related_name="recipient", on_delete=models.CASCADE
-    )
-    message_content = models.TextField()
-    date_of_sending = models.DateTimeField()
+# class Message(models.Model):
+#     thread = models.ForeignKey(Thread, null=True, blank=True, on_delete=models.CASCADE, related_name='chatmessage_thread')
+#     sender = models.ForeignKey(User, related_name="sender", on_delete=models.CASCADE)
+#     recipient = models.ForeignKey(User, related_name="recipient", on_delete=models.CASCADE)
+#     message_content = models.TextField()
+#     date_of_sending = models.DateTimeField()
+#     def __str__(self):
+#         return self.message_content
 
 
 class UsageStatistic(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     date_of_statistic = models.DateField()
+
+
+class ThreadManager(models.Manager):
+    def by_user(self, **kwargs):
+        user = kwargs.get('user')
+        lookup = Q(first_person=user) | Q(second_person=user)
+        qs = self.get_queryset().filter(lookup).distinct()
+        return qs
+
+
+class Thread(models.Model):
+    first_person = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='thread_first_person')
+    second_person = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True,related_name='thread_second_person')
+    updated = models.DateTimeField(auto_now=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    objects = ThreadManager()
+    class Meta:
+        unique_together = ['first_person', 'second_person']
+
+
+class ChatMessage(models.Model):
+    thread = models.ForeignKey(Thread, null=True, blank=True, on_delete=models.CASCADE, related_name='chatmessage_thread')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)

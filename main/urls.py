@@ -14,5 +14,9 @@ urlpatterns = [
     path('question.responses/<int:id>/', questionResponseDetail),
     path('questionnaires/', questionnaires),
     path('patients/', PatientList.as_view(), name="patients"),
-    path('patients/<int:id>/', patientDetail)
+    path('patients/<int:id>/', patientDetail),
+    path('surveys/',surveys ),
+    path('surveys/<int:id>/',surveyDetail ),
+    path('questions.types/',questionTypes ),
+    path('questions.types/<int:id>/',questionTypeDetail ),
 ]

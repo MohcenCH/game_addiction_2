@@ -7,9 +7,9 @@ from.serializers import *
 from .models import *
 from django.http import Http404
 from django.conf import settings
-from dj_rest_auth.app_settings import (
-    JWTSerializer, JWTSerializerWithExpiration, TokenSerializer,
-)
+from django.contrib.auth.decorators import login_required
+from dj_rest_auth.serializers import JWTSerializer, JWTSerializerWithExpiration, TokenSerializer
+
 from rest_framework import generics
 from django.contrib.auth import authenticate, login
 class CustomLogin(LoginView):
@@ -45,6 +45,35 @@ class UserList(generics.ListCreateAPIView):
 class DoctorList(generics.ListCreateAPIView):
     serializer_class = DoctorSerializer
     queryset = Doctor.objects.all()
+
+@api_view(['GET', 'POST'])
+def surveys(request):
+    if request.method == 'GET':
+        surveys = Survey.objects.all()
+        serializer = SurveySerializer(surveys, many = True)
+        return Response(serializer.data)
+    elif request.method == 'POST':
+        serializer = SurveySerializer(data = request.data)
+        if serializer.is_valid():
+            serializer.save
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT'])
+def surveyDetail(request, id):
+    try:
+        survey = Survey.objects.get(pk = id)
+    except:
+        return Response(status = status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = SurveySerializer(survey)
+        return Response(serializer.data)
+    elif request.method == 'DELETE':
+        survey.delete()
+        return Response(status = status.HTTP_204_NO_CONTENT)
+
 
 @api_view(['GET', 'POST'])
 def questions(request):
@@ -166,20 +195,37 @@ def questionResponseDetail(request, id):
 @api_view(['GET','POST'])
 def questionnaires(request):
     if request.method == 'GET':
-        questionnaire = Questionnaire.objects.all()
-        serializer = QuestionnaireSerializer(questionnaire, many = True)
+        questionnaires = Questionnaire.objects.all()
+        serializer = QuestionnaireSerializer(questionnaires, many = True)
         return Response(serializer.data)
     elif request.method == 'POST':
         serializer = QuestionnaireSerializer(data = request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
+        
+@api_view(['GET','PUT'])
+def questionnaires(request, id):
+    try:
+        questionnaire = Questionnaire.objects.get(pk=id)
+    except:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = QuestionnaireSerializer(questionnaire)
+        return Response(serializer.data)
+    elif request.method == 'PUT':
+        serializer = QuestionnaireSerializer(data = request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
 
 class PatientList(generics.ListCreateAPIView):
     serializer_class = PatientSerializer
     queryset = Patient.objects.all()
 
-@api_view(['GET', 'PUT'])
+@api_view(['GET', 'PUT', 'PATCH'])
 def patientDetail(request, id):
     try:
         patient = Patient.objects.get(pk=id)
@@ -189,7 +235,7 @@ def patientDetail(request, id):
     if request.method == 'GET':
         serializer = PatientSerializer(patient)
         return Response(serializer.data)
-    elif request.method == 'PUT':
+    elif request.method == 'PUT' or request.method == 'PATCH':
         serializer = PatientSerializer(patient, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -197,4 +243,44 @@ def patientDetail(request, id):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-  
+@api_view(['GET','POST'])
+def questionTypes(request):
+    if request.method == 'GET':
+        questionTypes = QuestionType.objects.all()
+        serializer = QuestionTypeSerializer(questionTypes, many = True)
+        return Response(serializer.data)
+    elif request.method == 'POST':
+        serializer = QuestionTypeSerializer(data = request.data)
+        if serializer.is_valid():
+            serializer.save
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status = status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'PATCH'])
+def questionTypeDetail(request, id):
+    try:
+        questionType = QuestionType.objects.get(pk=id)
+    except: 
+        return Response(status = status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        serializer = QuestionTypeSerializer(questionType)
+        return Response(serializer.data)
+    elif request.method == 'PUT' or request.method == 'PATCH':
+        serializer = PatientSerializer(questionType, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+@login_required
+def messages_page(request):
+    threads = Thread.objects.by_user(user=request.user).prefetch_related('chatmessage_thread').order_by('timestamp')
+    context = {
+        'Threads': threads
+    }
+    return render(request, 'messages.html', context)

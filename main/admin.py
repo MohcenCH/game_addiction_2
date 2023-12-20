@@ -8,7 +8,9 @@ from .models import (
     AnswerOption,
     QuestionResponse,
     Alert,
-    Message,
+    ChatMessage,
+    Survey,
+    QuestionType,
     UsageStatistic,
 )
 
@@ -20,5 +22,7 @@ admin.site.register(QuestionResponse)
 admin.site.register(AnswerOption)
 admin.site.register(Question)
 admin.site.register(Alert)
-admin.site.register(Message)
+admin.site.register(ChatMessage)
 admin.site.register(UsageStatistic)
+admin.site.register(Survey)
+admin.site.register(QuestionType)

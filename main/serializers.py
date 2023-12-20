@@ -19,6 +19,15 @@ class QuestionResponseSerializer(serializers.ModelSerializer):
         model = QuestionResponse
         fields = '__all__'
 
+class SurveySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Survey
+        fields = '__all__'
+
+class QuestionTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuestionType
+        fields = '__all__'
 class QuestionnaireSerializer(serializers.ModelSerializer):
     class Meta:
         model = Questionnaire
@@ -41,7 +50,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class PatientSerializer(serializers.ModelSerializer):
 
-    user = UserSerializer()
+    user = UserSerializer(required = False)
     class Meta:
         model = Patient
         fields = '__all__'
