@@ -37,7 +37,8 @@ class QuestionnaireSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        exclude = ["is_active","is_staff","is_superuser"]
+        exclude = ["is_staff","is_superuser"]
+        
 
     def create(self, validated_data):
         validated_data["password"] = make_password(validated_data.get("password"))
@@ -81,3 +82,17 @@ class DoctorSerializer(serializers.ModelSerializer):
             return doctor
         else:
             raise serializers.ValidationError(user_serializer.errors)
+        
+class MessageSerializer(serializers.ModelSerializer):
+    sender_username = serializers.ReadOnlyField(source='sender.username')
+    recipient_username = serializers.ReadOnlyField(source='recipient.username')
+
+    class Meta:
+        model = Message
+        fields = '__all__'
+        
+class FeedbackSerializer(serializers.ModelSerializer):
+    sender = UserSerializer()
+    class Meta:
+        model = Feedback
+        fields = '__all__'

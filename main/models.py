@@ -3,25 +3,36 @@ from django.contrib.auth.models import AbstractBaseUser
 from main.managers import UserManager
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.db.models.signals import post_save
 
 
 class User(AbstractBaseUser):
-    GENDER_CHOICES = [
-        ("M", "Male"),
-        ("F", "Female"),
-    ]
+    registration_date = models.DateField(auto_now_add = True, null = True)
+    # GENDER_CHOICES = [
+    #     ("Male", "Male"),
+    #     ("Female", "Female"),
+    # ]
+    # TYPE_CHOICES = [
+    #     ("P", "Patient"),
+    #     ("D", "Doctor"),
+    #     ("A", "Admin"),
+    # ]
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
-    gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
+    gender = models.CharField(max_length=10)
     date_of_birth = models.DateField(null=True,blank=True)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=255)
     is_superuser = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, blank = True)
     objects = UserManager()
+    account_type = models.CharField(max_length = 20, null = True)
     USERNAME_FIELD = "email"
-
+    loginCount = models.FloatField(default = 0)
+    latest_activity = models.DateTimeField(auto_now = True, null = True)
+    is_blocked = models.BooleanField(default=False)
+    
     def has_perm(self, perm, obj=None):
         return self.is_superuser
     
@@ -99,19 +110,20 @@ class QuestionResponse(models.Model):
 
 
 class Alert(models.Model):
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    date_of_alert = models.DateField()
+    fromUser = models.ForeignKey(User, on_delete=models.CASCADE, related_name='fromUserAlerts',null = True)
+    toUser = models.CharField(max_length = 255, null = True)
+    date_of_alert = models.DateField(auto_now_add = True)
+    content = models.TextField(null = True)
     type_of_alert = models.CharField(max_length=255)
 
 
-# class Message(models.Model):
-#     thread = models.ForeignKey(Thread, null=True, blank=True, on_delete=models.CASCADE, related_name='chatmessage_thread')
-#     sender = models.ForeignKey(User, related_name="sender", on_delete=models.CASCADE)
-#     recipient = models.ForeignKey(User, related_name="recipient", on_delete=models.CASCADE)
-#     message_content = models.TextField()
-#     date_of_sending = models.DateTimeField()
-#     def __str__(self):
-#         return self.message_content
+class Message(models.Model):
+    sender = models.ForeignKey(User, related_name="sender", on_delete=models.CASCADE)
+    recipient = models.ForeignKey(User, related_name="recipient", on_delete=models.CASCADE)
+    message_content = models.TextField()
+    date_of_sending = models.DateTimeField(auto_now_add = True)
+    def __str__(self):
+        return self.message_content
 
 
 class UsageStatistic(models.Model):
@@ -119,27 +131,34 @@ class UsageStatistic(models.Model):
     date_of_statistic = models.DateField()
 
 
-class ThreadManager(models.Manager):
-    def by_user(self, **kwargs):
-        user = kwargs.get('user')
-        lookup = Q(first_person=user) | Q(second_person=user)
-        qs = self.get_queryset().filter(lookup).distinct()
-        return qs
+# class ThreadManager(models.Manager):
+#     def by_user(self, **kwargs):
+#         user = kwargs.get('user')
+#         lookup = Q(first_person=user) | Q(second_person=user)
+#         qs = self.get_queryset().filter(lookup).distinct()
+#         return qs
 
 
-class Thread(models.Model):
-    first_person = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='thread_first_person')
-    second_person = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True,related_name='thread_second_person')
-    updated = models.DateTimeField(auto_now=True)
-    timestamp = models.DateTimeField(auto_now_add=True)
+# class Thread(models.Model):
+#     first_person = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='thread_first_person')
+#     second_person = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True,related_name='thread_second_person')
+#     updated = models.DateTimeField(auto_now=True)
+#     timestamp = models.DateTimeField(auto_now_add=True)
 
-    objects = ThreadManager()
-    class Meta:
-        unique_together = ['first_person', 'second_person']
+#     objects = ThreadManager()
+#     class Meta:
+#         unique_together = ['first_person', 'second_person']
 
 
-class ChatMessage(models.Model):
-    thread = models.ForeignKey(Thread, null=True, blank=True, on_delete=models.CASCADE, related_name='chatmessage_thread')
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    message = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
+# class ChatMessage(models.Model):
+#     thread = models.ForeignKey(Thread, null=True, blank=True, on_delete=models.CASCADE, related_name='chatmessage_thread')
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     message = models.TextField()
+#     timestamp = models.DateTimeField(auto_now_add=True)   
+
+
+class Feedback(models.Model):
+    sender = models.ForeignKey(User, on_delete = models.DO_NOTHING)
+    content = models.TextField()
+    date = models.DateField(auto_now_add = True, null = True)
+
