@@ -31,7 +31,7 @@ urlpatterns = [
     path('create-message/', createMessageAPIView),
     path('feedbacks/', feedbacksList),
     path('feedback_delete/<int:id>', deleteFeedback),
-    # path('change-password/', password_change_api, name='password_change_api'),
+     path('password-reset/', PasswordResetView.as_view(), name='password-reset'),
     path('alerts/', alertsList,),
     path('alerts/<int:id>/', alertDetails),
 

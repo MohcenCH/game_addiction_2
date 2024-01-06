@@ -15,7 +15,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from dj_rest_auth.serializers import JWTSerializer, JWTSerializerWithExpiration, TokenSerializer
 from rest_framework import generics
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login,update_session_auth_hash
 from django.dispatch import Signal
 from django.db.models import Q
 from rest_framework.views import APIView
@@ -24,7 +24,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from rest_framework.permissions import AllowAny
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-
+from django.contrib.auth.password_validation import validate_password
 
 
 loginSignal = Signal()
@@ -64,6 +64,19 @@ class UserList(generics.ListCreateAPIView):
         if user and user.is_active:
             login(self.request, user)
 
+class PasswordResetView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PasswordResetSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = PasswordResetSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        request.user.set_password(serializer.validated_data['new_password'])
+        request.user.save()
+        update_session_auth_hash(request, request.user)  
+
+        return Response({"message": "Password updated successfully"}, status=status.HTTP_200_OK)
+    
 @api_view(["GET", "PATCH", "DELETE"])
 # @permission_classes([IsAuthenticated])
 def userDetail(request, id):
@@ -647,44 +660,6 @@ def deleteFeedback(request, id):
         feedback.delete()
         
 
-# class ChangePasswordView(APIView):
-#     permission_classes = (IsAuthenticated,)
-#     def post(self, request, *args, **kwargs):
-#         serializer = PasswordChangeSerializer(data=request.data)
-#         if serializer.is_valid():
-#             old_password = serializer.validated_data.get('old_password')
-#             new_password = serializer.validated_data.get('new_password')
-
-#             user = authenticate(request, username=request.user.email, password=old_password)
-
-#             if user is not None:
-#                 # Old password is correct, update the password
-#                 user.set_password(new_password)
-#                 user.save()
-#                 return Response({'detail': 'Password changed successfully!'}, status=status.HTTP_200_OK)
-#             else:
-#                 # Old password is incorrect
-#                 return Response({'detail': 'Old password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-
-# class ChangePassword(PasswordChangeView):
-
-# class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
-#     success_url = reverse_lazy('password_change_done')
-
-# @api_view(['POST'])
-# def password_change_api(request):
-#     if request.method == 'POST':
-#         form = CustomPasswordChangeView.form_class(request.user, request.POST)
-#         if form.is_valid():
-#             form.save()
-#             return JsonResponse({'success': True})
-#         else:
-#             return JsonResponse({'errors': form.errors}, status=400)
-#     else:
-#         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 @api_view(['GET'])  
 def alertsList(request):
