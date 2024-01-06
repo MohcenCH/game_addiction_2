@@ -19,6 +19,12 @@ from django.contrib.auth import authenticate, login
 from django.dispatch import Signal
 from django.db.models import Q
 from rest_framework.views import APIView
+from django.contrib.auth.views import PasswordChangeView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.urls import reverse_lazy
+from rest_framework.permissions import AllowAny
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+
 
 
 loginSignal = Signal()
@@ -47,8 +53,8 @@ class CustomLogin(LoginView):
 class UserList(generics.ListCreateAPIView):
     serializer_class = UserSerializer
     queryset = User.objects.all()
-
-    @permission_classes([IsAuthenticated])
+    authentication_classes = [SessionAuthentication, BasicAuthentication]
+    permission_classes = [AllowAny]
     def perform_create(self, serializer):
         user = serializer.save()
         user = authenticate(
@@ -59,7 +65,7 @@ class UserList(generics.ListCreateAPIView):
             login(self.request, user)
 
 @api_view(["GET", "PATCH", "DELETE"])
-@permission_classes([IsAuthenticated])
+# @permission_classes([IsAuthenticated])
 def userDetail(request, id):
     try:
         user = User.objects.get(pk = id)
@@ -329,13 +335,13 @@ def questionTypeDetail(request, id):
 
 
 
-@permission_classes([IsAuthenticated])
-def messages_page(request):
-    threads = Thread.objects.by_user(user=request.user).prefetch_related('chatmessage_thread').order_by('timestamp')
-    context = {
-        'Threads': threads
-    }
-    return render(request, 'messages.html', context)
+# @permission_classes([IsAuthenticated])
+# def messages_page(request):
+#     threads = Thread.objects.by_user(user=request.user).prefetch_related('chatmessage_thread').order_by('timestamp')
+#     context = {
+#         'Threads': threads
+#     }
+#     return render(request, 'messages.html', context)
 
 @permission_classes([IsAuthenticated])
 def usersGrowthRate(request):
@@ -640,3 +646,87 @@ def deleteFeedback(request, id):
     if request.method == 'DELETE':
         feedback.delete()
         
+
+# class ChangePasswordView(APIView):
+#     permission_classes = (IsAuthenticated,)
+#     def post(self, request, *args, **kwargs):
+#         serializer = PasswordChangeSerializer(data=request.data)
+#         if serializer.is_valid():
+#             old_password = serializer.validated_data.get('old_password')
+#             new_password = serializer.validated_data.get('new_password')
+
+#             user = authenticate(request, username=request.user.email, password=old_password)
+
+#             if user is not None:
+#                 # Old password is correct, update the password
+#                 user.set_password(new_password)
+#                 user.save()
+#                 return Response({'detail': 'Password changed successfully!'}, status=status.HTTP_200_OK)
+#             else:
+#                 # Old password is incorrect
+#                 return Response({'detail': 'Old password is incorrect.'}, status=status.HTTP_400_BAD_REQUEST)
+
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+
+# class ChangePassword(PasswordChangeView):
+
+# class CustomPasswordChangeView(LoginRequiredMixin, PasswordChangeView):
+#     success_url = reverse_lazy('password_change_done')
+
+# @api_view(['POST'])
+# def password_change_api(request):
+#     if request.method == 'POST':
+#         form = CustomPasswordChangeView.form_class(request.user, request.POST)
+#         if form.is_valid():
+#             form.save()
+#             return JsonResponse({'success': True})
+#         else:
+#             return JsonResponse({'errors': form.errors}, status=400)
+#     else:
+#         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@api_view(['GET'])  
+def alertsList(request):
+    if request.method == 'GET':
+        if request.user.is_authenticated:
+            if request.user.account_type == 'Admin':
+                alerts = Alert.objects.filter(
+                    toUser = 'admin'
+                )
+                serializer = AlertSerializer(alerts, many = True)
+                return Response(serializer.data)
+            elif request.user.account_type == 'Doctor':
+                alerts = Alert.objects.filter(
+                    toUser = 'doctor'
+                )
+                serializer = AlertSerializer(alerts, many = True)
+                return Response(serializer.data)
+            else:
+                return Response({"detail": "Permission denied"}, status=403)
+            
+@api_view(['PATCH','DELETE'])  
+@permission_classes([IsAuthenticated])
+def alertDetails(request, id):
+    try:
+        alert = Alert.objects.get(pk = id)
+    except:
+        return Response(status = status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'DELETE':
+        alert.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    elif request.method == "PATCH":
+        serializer = AlertSerializer(alert,data = request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+
+
+    

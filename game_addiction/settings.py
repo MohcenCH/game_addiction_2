@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-$5#q)!6)6@l$0=i66=18rles#^5k8-dp@5&%y4%ii_3!lbr%aa
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
+CORS_ALLOW_CREDENTIALS = True
 ALLOWED_HOSTS = []
 
 REST_FRAMEWORK = {
@@ -58,16 +58,16 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    "main.middleware.LogUserAccessMiddleware",
-    "django.middleware.common.CommonMiddleware",
+    # "main.middleware.LogUserAccessMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
+    "django.middleware.common.CommonMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    'corsheaders.middleware.CorsMiddleware',
-    "main.middleware.LastActivityMiddleware"
+    # "main.middleware.LastActivityMiddleware"
 
 ]
 
@@ -159,9 +159,12 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-CORS_ALLOW_ALL_ORIGINS = True
-
-CORS_ALLOW_CREDENTIALS = True
+# CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000", 
+    "http://localhost:5173", 
+]
+# CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS = [
     'DELETE',
     'GET',
@@ -182,3 +185,6 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
 ]
+CSRF_USE_SESSIONS = True
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True

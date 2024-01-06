@@ -1,5 +1,6 @@
 from django.urls import path
 from main.views import *
+from django.contrib.auth.views import PasswordChangeView
 from dj_rest_auth.views import LogoutView
 urlpatterns = [
     path("login/", CustomLogin.as_view(), name="login"),
@@ -20,7 +21,6 @@ urlpatterns = [
     path('surveys/<int:id>/',surveyDetail ),
     path('questions.types/',questionTypes ),
     path('questions.types/<int:id>/',questionTypeDetail ),
-    path('chat/', messages_page),
     path('statistics/users_growth_rate', usersGrowthRate),
     path('statistics/users_types/', usersType),
     path('statistics/messages_growth_rate/', messagesGrowthRate),
@@ -31,5 +31,9 @@ urlpatterns = [
     path('create-message/', createMessageAPIView),
     path('feedbacks/', feedbacksList),
     path('feedback_delete/<int:id>', deleteFeedback),
+    # path('change-password/', password_change_api, name='password_change_api'),
+    path('alerts/', alertsList,),
+    path('alerts/<int:id>/', alertDetails),
+
 
 ]

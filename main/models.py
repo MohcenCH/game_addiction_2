@@ -29,7 +29,6 @@ class User(AbstractBaseUser):
     objects = UserManager()
     account_type = models.CharField(max_length = 20, null = True)
     USERNAME_FIELD = "email"
-    loginCount = models.FloatField(default = 0)
     latest_activity = models.DateTimeField(auto_now = True, null = True)
     is_blocked = models.BooleanField(default=False)
     
@@ -44,7 +43,7 @@ class User(AbstractBaseUser):
 
 
 class Patient(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE,related_name='patient')
     addiction_level = models.FloatField(max_length=255, null=True)
     average_hours_of_play_per_week = models.FloatField(null=True)
     average_months_of_play = models.FloatField(null=True)
@@ -57,7 +56,7 @@ class Patient(models.Model):
 
 
 class Doctor(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE,related_name='doctor')
     specialty = models.CharField(max_length=255)
     planned_therapy_sessions = models.IntegerField(null=True,blank=True)
 
@@ -114,7 +113,7 @@ class Alert(models.Model):
     toUser = models.CharField(max_length = 255, null = True)
     date_of_alert = models.DateField(auto_now_add = True)
     content = models.TextField(null = True)
-    type_of_alert = models.CharField(max_length=255)
+    is_read = models.BooleanField(default=False, null = True)
 
 
 class Message(models.Model):
@@ -160,5 +159,7 @@ class UsageStatistic(models.Model):
 class Feedback(models.Model):
     sender = models.ForeignKey(User, on_delete = models.DO_NOTHING)
     content = models.TextField()
+    email = models.CharField(max_length = 30, null = True)
+    phone = models.IntegerField(null = True)
     date = models.DateField(auto_now_add = True, null = True)
 
